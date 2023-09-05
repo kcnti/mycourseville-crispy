@@ -39,9 +39,13 @@ class MCV:
         r = self.session.post(URL)
         resp = r.json()
         html_doc = resp['html']
-        homeworks = re.findall('<strong>&ldquo;(.+?)&rdquo;</strong>(.+?)<strong>(.+?)</strong>', html_doc)
-
-        output = [''.join(x) for x in homeworks]
+        # print(html_doc)
+        courseLinks = [i.split('/')[2] for i in re.findall('<a target="_blank" href="(.+?)">', html_doc)]
+        homeworks = re.findall(r'<strong>&ldquo;(.+?)&rdquo;</strong>(.+?)<strong>(.+?)</strong>', html_doc)
+        
+        courseInfo = self.getCourses()['courseInfo']
+        print(courseInfo)
+        output = [''.join(homeworks[x]) + ' (' + courseInfo[courseLinks[x]] + ')' for x in range(len(homeworks))]
         return ('\n'.join(output))
 
 
@@ -50,6 +54,7 @@ class MCV:
         r = self.session.get(mcv)
 
         childID = re.findall('class="cv-fa-collapse-control"[^.]*child_id="(.+?)"', r.text)[0]
+        # print(re.findall('class="cv-fa-collapse-control"[^.]*child_id="(.+?)"', r.text))
         return childID
 
     def getCourses(self):
@@ -57,17 +62,19 @@ class MCV:
 
         childID = self.getChildID()
 
-
         data = {
             'content': childID
         }
         r = self.session.post(URL, data=data)
         resp = r.json()
         html_doc = ' '.join(resp['html'].split())
-        courses = re.findall('<a href="(.+?)" aria-label="(.+?)"', html_doc)
+        courses = re.findall('<a href="(.+?)" aria-label="(.+?)".cv_cid="(.+?)"', html_doc)
         coursesName = list(map(lambda x: x[1], courses))
+        courseInfo = {}
+        for i in courses:
+            courseInfo[i[2]] = i[1].split('"')[0]
 
-        return '\n'.join(coursesName)
+        return {'courseText': '\n'.join(coursesName), 'courseInfo': courseInfo}
 
     def getFileLink(self):
         URL = 'https://www.mycourseville.com/?q=courseville/ajax/cvhomepanel_get'
