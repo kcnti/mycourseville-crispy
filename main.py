@@ -15,8 +15,8 @@ session = mcv.login()
 assignments = mcv.getAssignments()
 print(assignments)
 
-courses = mcv.getCourses()
-print(courses)
+# courses = mcv.getCourses()
+# print(courses)
 
-fileLinks = mcv.getFileLink()
-print(fileLinks)
+# fileLinks = mcv.getFileLink()
+# print(fileLinks)
