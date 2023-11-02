@@ -44,7 +44,6 @@ class MCV:
         homeworks = re.findall(r'<strong>&ldquo;(.+?)&rdquo;</strong>(.+?)<strong>(.+?)</strong>', html_doc)
         
         courseInfo = self.getCourses()['courseInfo']
-        print(courseInfo)
         output = [''.join(homeworks[x]) + ' (' + courseInfo[courseLinks[x]] + ')' for x in range(len(homeworks))]
         return ('\n'.join(output))
 
@@ -74,23 +73,49 @@ class MCV:
         for i in courses:
             courseInfo[i[2]] = i[1].split('"')[0]
 
-        return {'courseText': '\n'.join(coursesName), 'courseInfo': courseInfo}
+        return {'courseName': '\n'.join(coursesName), 'courseInfo': courseInfo}
 
     def getFileLink(self):
-        URL = 'https://www.mycourseville.com/?q=courseville/ajax/cvhomepanel_get'
 
-        childID = self.getChildID()
+        coursesInfo = self.getCourses()['courseInfo']
+        URL = 'https://www.mycourseville.com/?q=courseville/ajax/course'
 
-        data = {
-            'content': childID
-        }
-        r = self.session.post(URL, data=data)
-        resp = r.json()
-        html_doc = ' '.join(resp['html'].split())
-        courses = re.findall('<a href="(.+?)"', html_doc)
-        print(courses)
-        # not done
-        return
+        output = {}
+
+        for courseId in coursesInfo:
+            output[coursesInfo[courseId]] = {}
+            data = {
+                'ocv_mode': None,
+                'cv_cid': courseId
+            }
+            req = self.session.post(URL, data=data)
+            html = req.text
+            pattern = r'title=\\"Course materials in folder titled (.+?)\\"  data-folder=(.*?)\/tbody'
+            folders = re.findall(pattern, html)
+            pattern = re.compile(r'<a  aria-label=\\"View material titled (.+?)\\".*?td data-col=\\"action\\"><a href=\\"(.+?)\\"')
+            for tmp in folders:
+                folder, junky = tmp
+                output[coursesInfo[courseId]][folder] = []
+
+                files = pattern.findall(junky)
+                for _file in files:
+                    fileName = _file[0].encode('latin1').decode('unicode-escape').replace('/', '-').replace('\\', '')
+                    fileUrl = _file[1].replace('\\', '')
+                    output[coursesInfo[courseId]][folder].append({
+                        'fileName': fileName,
+                        'fileUrl': fileUrl
+                    })
+            others = re.findall(r'<\\\/div><table class=\\"cv-course-home-material-table cvui-table cvui-table-striped\\"(.+?)\/tbody', html)
+            if others:
+                for other in pattern.findall(others[0]):
+                    output[coursesInfo[courseId]]['other'] = []
+                    fileName = other[0].encode('latin1').decode('unicode-escape').replace('/', '-').replace('\\', '')
+                    fileUrl = other[1].replace('\\', '')
+                    output[coursesInfo[courseId]]['other'].append({
+                        'fileName': fileName,
+                        'fileUrl': fileUrl
+                    })
+        return output
 
 if __name__ == '__main__':
 
