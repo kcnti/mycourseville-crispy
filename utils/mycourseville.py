@@ -107,8 +107,8 @@ class MCV:
                     })
             others = re.findall(r'<\\\/div><table class=\\"cv-course-home-material-table cvui-table cvui-table-striped\\"(.+?)\/tbody', html)
             if others:
+                output[coursesInfo[courseId]]['other'] = []
                 for other in pattern.findall(others[0]):
-                    output[coursesInfo[courseId]]['other'] = []
                     fileName = other[0].encode('latin1').decode('unicode-escape').replace('/', '-').replace('\\', '')
                     fileUrl = other[1].replace('\\', '')
                     output[coursesInfo[courseId]]['other'].append({
